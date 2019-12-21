@@ -28,6 +28,12 @@ pub mod utils {
 pub mod intcode {
     use std::collections::VecDeque;
 
+    #[derive(Debug)]
+    pub enum IntCodeError {
+        NeedInput,
+        ProgramComplete,
+    }
+
     pub struct IntCodeMachine {
         instruction: usize,
         relative_base: i64,
@@ -50,10 +56,18 @@ pub mod intcode {
         }
 
         pub fn get_output(&mut self) -> Option<i64> {
+            match self.run_program() {
+                Ok(v) => Some(v),
+                Err(IntCodeError::ProgramComplete) => None,
+                _ => None,
+            }
+        }
+
+        pub fn get_output_v2(&mut self) -> Result<i64, IntCodeError> {
             self.run_program()
         }
 
-        pub fn run_program(&mut self) -> Option<i64> {
+        pub fn run_program(&mut self) -> Result<i64, IntCodeError> {
             loop {
                 let instruction: i64 = self.registers[self.instruction];
                 let opcode = OpCode::from_instruction(instruction);
@@ -63,7 +77,7 @@ pub mod intcode {
 
                 let step: i64;
                 match opcode {
-                    OpCode::End => return None,
+                    OpCode::End => return Err(IntCodeError::ProgramComplete),
                     OpCode::Add => {
                         step = 4;
                         let left_operand = self.get_parameter(1, parameter_mode_a);
@@ -84,14 +98,19 @@ pub mod intcode {
                         step = 2;
                         let target = self.get_parameter_as_address(1, parameter_mode_a);
 
-                        self.registers[target as usize] = self.input.pop_front().unwrap();
+                        let input = match self.input.pop_front() {
+                            Some(v) => v,
+                            None => return Err(IntCodeError::NeedInput),
+                        };
+
+                        self.registers[target as usize] = input;
                     }
                     OpCode::Output => {
                         step = 2;
                         let operand = self.get_parameter(1, parameter_mode_a);
 
                         self.instruction += step as usize;
-                        return Some(operand);
+                        return Ok(operand);
                     }
                     OpCode::JumpIfTrue => {
                         step = 3;
