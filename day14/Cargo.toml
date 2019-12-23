@@ -1,0 +1,11 @@
+[package]
+name = "day7"
+version = "0.1.0"
+authors = ["Tao <kernelpaste@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+aoc = { path = "../" }
+serde_scan = "0.3.2"
+scan_fmt = "0.2.4"
+num = "0.1.28"
